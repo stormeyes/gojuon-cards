@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
@@ -58,6 +60,10 @@ fun CardScreen() {
 
     val audio = rememberKanaAudio()
 
+    // 每个 kana 一个 playToken。点笔顺按钮 → ++,触发 StrokeAnimator 重置并播放。
+    // 不持久化:杀进程后所有 token 归零(等价于"切到那张卡片是静态显示"),这是期望行为。
+    val strokeTokens = remember { mutableStateMapOf<Int, Int>() }
+
     val orderedIndices: List<Int> = remember(randomOrder, shuffleSeed) {
         if (randomOrder) {
             (0 until KANA_COUNT).shuffled(java.util.Random(shuffleSeed))
@@ -104,6 +110,13 @@ fun CardScreen() {
         }
     }
 
+    // 切换卡片时,把所有非当前卡片的 token 清零(下次访问时回到静态)
+    LaunchedEffect(currentRealIndex) {
+        val keep = currentRealIndex
+        val toRemove = strokeTokens.keys.filter { it != keep }
+        toRemove.forEach { strokeTokens.remove(it) }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -139,10 +152,13 @@ fun CardScreen() {
             ) { virtualPage ->
                 val displayPos = ((virtualPage % KANA_COUNT) + KANA_COUNT) % KANA_COUNT
                 val kanaIndex = orderedIndices[displayPos]
+                val token = strokeTokens[kanaIndex] ?: 0
                 CardContent(
                     kana = GOJUON[kanaIndex],
                     showRomaji = showRomaji,
+                    strokePlayToken = token,
                     onTapKana = { audio.play(GOJUON[kanaIndex].audioRes) },
+                    onTapStroke = { strokeTokens[kanaIndex] = (strokeTokens[kanaIndex] ?: 0) + 1 },
                 )
             }
 
@@ -167,7 +183,13 @@ private fun SwitchLabel(text: String, checked: Boolean, onCheckedChange: (Boolea
 }
 
 @Composable
-private fun CardContent(kana: Kana, showRomaji: Boolean, onTapKana: () -> Unit) {
+private fun CardContent(
+    kana: Kana,
+    showRomaji: Boolean,
+    strokePlayToken: Int,
+    onTapKana: () -> Unit,
+    onTapStroke: () -> Unit,
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -176,20 +198,34 @@ private fun CardContent(kana: Kana, showRomaji: Boolean, onTapKana: () -> Unit) 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = kana.char,
-                fontSize = 220.sp,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier.clickable { onTapKana() }
-            )
+            // 大假名 / 笔顺动画区域(同一位置,固定 size 防止动画切换抖动布局)
+            Box(
+                modifier = Modifier.size(260.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (strokePlayToken > 0) {
+                    StrokeAnimator(
+                        drawableRes = kana.drawableRes,
+                        playToken = strokePlayToken,
+                        modifier = Modifier.size(220.dp)
+                    )
+                } else {
+                    Text(
+                        text = kana.char,
+                        fontSize = 220.sp,
+                        fontWeight = FontWeight.Normal,
+                        modifier = Modifier.clickable { onTapKana() }
+                    )
+                }
+            }
             Spacer(Modifier.height(8.dp))
             if (showRomaji) {
                 Text(text = kana.romaji, fontSize = 36.sp)
             } else {
-                Spacer(Modifier.height(36.dp))  // 占位保持布局稳定
+                Spacer(Modifier.height(36.dp))
             }
             Spacer(Modifier.height(48.dp))
-            OutlinedButton(onClick = { /* Phase 7 stroke trigger */ }) {
+            OutlinedButton(onClick = onTapStroke) {
                 Text(androidx.compose.ui.res.stringResource(R.string.btn_stroke))
             }
             Spacer(Modifier.height(8.dp))
