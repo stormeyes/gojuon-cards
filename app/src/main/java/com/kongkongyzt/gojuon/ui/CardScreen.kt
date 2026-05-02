@@ -35,9 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kongkongyzt.gojuon.R
+import com.kongkongyzt.gojuon.audio.rememberKanaAudio
 import com.kongkongyzt.gojuon.data.GOJUON
 import com.kongkongyzt.gojuon.data.Kana
-import com.kongkongyzt.gojuon.tts.rememberJapaneseTts
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -56,7 +56,7 @@ fun CardScreen() {
     // 随机洗牌种子;非 random 模式时不参与计算
     var shuffleSeed by rememberSaveable { mutableStateOf(0L) }
 
-    val tts = rememberJapaneseTts()
+    val audio = rememberKanaAudio()
 
     val orderedIndices: List<Int> = remember(randomOrder, shuffleSeed) {
         if (randomOrder) {
@@ -142,7 +142,7 @@ fun CardScreen() {
                 CardContent(
                     kana = GOJUON[kanaIndex],
                     showRomaji = showRomaji,
-                    onTapKana = { tts.speak(GOJUON[kanaIndex].char) },
+                    onTapKana = { audio.play(GOJUON[kanaIndex].audioRes) },
                 )
             }
 

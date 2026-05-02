@@ -10,7 +10,4 @@
     <string name="btn_prev">上一个</string>
     <string name="btn_next">下一个</string>
 
-    <!-- TTS errors -->
-    <string name="tts_unavailable">系统未安装日语 TTS,请到「设置 → 文字转语音」安装日语语音包</string>
-    <string name="tts_init_failed">语音引擎初始化失败</string>
 </resources>
