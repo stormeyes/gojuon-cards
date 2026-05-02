@@ -1,6 +1,8 @@
 package com.kongkongyzt.gojuon.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +49,7 @@ private const val KANA_COUNT = 46
 private const val VIRTUAL_PAGE_COUNT = 10_000
 private val INITIAL_VIRTUAL_PAGE = (VIRTUAL_PAGE_COUNT / 2).let { it - it % KANA_COUNT }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun CardScreen() {
     // ── 持久化状态 ──
@@ -120,7 +122,21 @@ fun CardScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "日语五十音") },
+                title = {
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    val attrText = androidx.compose.ui.res.stringResource(R.string.attribution)
+                    Text(
+                        text = "日语五十音",
+                        modifier = Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                android.widget.Toast.makeText(
+                                    ctx, attrText, android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    )
+                },
                 actions = {
                     SwitchLabel(
                         text = androidx.compose.ui.res.stringResource(R.string.toggle_romaji),

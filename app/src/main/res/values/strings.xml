@@ -10,4 +10,6 @@
     <string name="btn_prev">上一个</string>
     <string name="btn_next">下一个</string>
 
+    <!-- Attribution -->
+    <string name="attribution">Stroke data © KanjiVG (CC-BY-SA-3.0). Audio: macOS Kyoko voice.</string>
 </resources>
