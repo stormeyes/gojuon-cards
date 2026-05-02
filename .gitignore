@@ -17,3 +17,6 @@ Thumbs.db
 
 # Generated
 *.hprof
+
+# KanjiVG raw data (regeneratable, ~200 KB)
+scripts/kanjivg_raw/
