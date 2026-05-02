@@ -15,46 +15,107 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kongkongyzt.gojuon.R
 import com.kongkongyzt.gojuon.data.GOJUON
 import com.kongkongyzt.gojuon.data.Kana
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-/**
- * 卡片总数。固定 46(清音平假名)。
- * Pager 用 [VIRTUAL_PAGE_COUNT] 模拟无限滚动以支持首尾循环。
- */
 private const val KANA_COUNT = 46
-private const val VIRTUAL_PAGE_COUNT = 10_000  // 大数模拟无限;中点附近开始
+private const val VIRTUAL_PAGE_COUNT = 10_000
 private val INITIAL_VIRTUAL_PAGE = (VIRTUAL_PAGE_COUNT / 2).let { it - it % KANA_COUNT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardScreen() {
+    // ── 持久化状态 ──
+    var showRomaji by rememberSaveable { mutableStateOf(true) }
+    var randomOrder by rememberSaveable { mutableStateOf(false) }
+    // 当前真实 kana 索引(在 GOJUON 中的 index, 0..45),独立于 pager 的 virtual page
+    var currentRealIndex by rememberSaveable { mutableStateOf(0) }
+    // 随机洗牌种子;非 random 模式时不参与计算
+    var shuffleSeed by rememberSaveable { mutableStateOf(0L) }
+
+    val orderedIndices: List<Int> = remember(randomOrder, shuffleSeed) {
+        if (randomOrder) {
+            (0 until KANA_COUNT).shuffled(java.util.Random(shuffleSeed))
+        } else {
+            (0 until KANA_COUNT).toList()
+        }
+    }
+
+    // 当前 kana 在 orderedIndices 中的位置,用于初始化 pager
+    val currentDisplayPos: Int = remember(orderedIndices, currentRealIndex) {
+        orderedIndices.indexOf(currentRealIndex).coerceAtLeast(0)
+    }
+
     val pagerState = rememberPagerState(
-        initialPage = INITIAL_VIRTUAL_PAGE,
+        initialPage = INITIAL_VIRTUAL_PAGE + currentDisplayPos,
         pageCount = { VIRTUAL_PAGE_COUNT }
     )
     val scope = rememberCoroutineScope()
 
-    val currentRealIndex = ((pagerState.currentPage % KANA_COUNT) + KANA_COUNT) % KANA_COUNT
-    val displayList: List<Kana> = GOJUON  // Phase 4 will swap to shuffled order when toggle is on
+    // ── 把 pager 当前页同步回 currentRealIndex(用户滑动时持续更新) ──
+    LaunchedEffect(pagerState, orderedIndices) {
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .collect { virtualPage ->
+                val displayPos = ((virtualPage % KANA_COUNT) + KANA_COUNT) % KANA_COUNT
+                currentRealIndex = orderedIndices[displayPos]
+            }
+    }
+
+    // ── 切换 random 开关时:刷新洗牌种子(只在 randomOrder=true 时) ──
+    LaunchedEffect(randomOrder) {
+        if (randomOrder) {
+            shuffleSeed = System.currentTimeMillis()
+        }
+    }
+
+    // ── orderedIndices 变化(随机/顺序切换或重洗)时,把 pager 跳到当前 kana 的新位置 ──
+    LaunchedEffect(orderedIndices) {
+        val newPos = orderedIndices.indexOf(currentRealIndex)
+        if (newPos >= 0) {
+            val targetVirtual = INITIAL_VIRTUAL_PAGE + newPos
+            // 用 scrollToPage(瞬时),不要 animateScrollToPage(会动画穿过中间所有页)
+            pagerState.scrollToPage(targetVirtual)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = "日语五十音") },
+                actions = {
+                    SwitchLabel(
+                        text = androidx.compose.ui.res.stringResource(R.string.toggle_romaji),
+                        checked = showRomaji,
+                        onCheckedChange = { showRomaji = it }
+                    )
+                    SwitchLabel(
+                        text = androidx.compose.ui.res.stringResource(R.string.toggle_random),
+                        checked = randomOrder,
+                        onCheckedChange = { randomOrder = it }
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors()
             )
         }
@@ -72,25 +133,36 @@ fun CardScreen() {
                     .height(0.dp)
                     .weight(1f)
             ) { virtualPage ->
-                val realIndex = ((virtualPage % KANA_COUNT) + KANA_COUNT) % KANA_COUNT
-                CardContent(kana = displayList[realIndex])
+                val displayPos = ((virtualPage % KANA_COUNT) + KANA_COUNT) % KANA_COUNT
+                val kanaIndex = orderedIndices[displayPos]
+                CardContent(
+                    kana = GOJUON[kanaIndex],
+                    showRomaji = showRomaji,
+                )
             }
 
             BottomNav(
-                currentIndex = currentRealIndex,
-                onPrev = {
-                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                },
-                onNext = {
-                    scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                },
+                positionLabel = "${currentDisplayPos + 1} / $KANA_COUNT",
+                onPrev = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
+                onNext = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
             )
         }
     }
 }
 
 @Composable
-private fun CardContent(kana: Kana) {
+private fun SwitchLabel(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    ) {
+        Text(text = text, fontSize = 12.sp)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun CardContent(kana: Kana, showRomaji: Boolean) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -105,25 +177,23 @@ private fun CardContent(kana: Kana) {
                 fontWeight = FontWeight.Normal,
             )
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = kana.romaji,
-                fontSize = 36.sp,
-            )
+            if (showRomaji) {
+                Text(text = kana.romaji, fontSize = 36.sp)
+            } else {
+                Spacer(Modifier.height(36.dp))  // 占位保持布局稳定
+            }
             Spacer(Modifier.height(48.dp))
             OutlinedButton(onClick = { /* Phase 7 stroke trigger */ }) {
-                Text(stringResource(R.string.btn_stroke))
+                Text(androidx.compose.ui.res.stringResource(R.string.btn_stroke))
             }
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = kana.row,
-                fontSize = 14.sp,
-            )
+            Text(text = kana.row, fontSize = 14.sp)
         }
     }
 }
 
 @Composable
-private fun BottomNav(currentIndex: Int, onPrev: () -> Unit, onNext: () -> Unit) {
+private fun BottomNav(positionLabel: String, onPrev: () -> Unit, onNext: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -134,10 +204,14 @@ private fun BottomNav(currentIndex: Int, onPrev: () -> Unit, onNext: () -> Unit)
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = onPrev) { Text("← " + stringResource(R.string.btn_prev)) }
-            Button(onClick = onNext) { Text(stringResource(R.string.btn_next) + " →") }
+            Button(onClick = onPrev) {
+                Text("← " + androidx.compose.ui.res.stringResource(R.string.btn_prev))
+            }
+            Button(onClick = onNext) {
+                Text(androidx.compose.ui.res.stringResource(R.string.btn_next) + " →")
+            }
         }
         Spacer(Modifier.height(8.dp))
-        Text(text = "${currentIndex + 1} / $KANA_COUNT", fontSize = 14.sp)
+        Text(text = positionLabel, fontSize = 14.sp)
     }
 }
