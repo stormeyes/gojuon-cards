@@ -277,3 +277,49 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 | **总计** | | | **~6 h** |
 
 每阶段完成都对应一次 git commit。
+
+---
+
+## 13. 实施偏差(2026-05-02 v0.1 完成后回填)
+
+跟原计划相比,实际跑下来有两处偏差,在此记录:
+
+### 13.1 §6 TTS → 预录音频文件
+
+**原计划**: 用 Android `TextToSpeech` + `Locale.JAPANESE`,系统 TTS 实时合成。
+
+**实际遇到的问题**: 用户的 Redmi marble (HyperOS 国内版) **完全没装 TTS engine** —— `tts_default_synth = null`,设备上唯一的"语音"包是 `com.xiaomi.mibrain.speech`(小爱同学,不是标准 TTS engine)。`TextToSpeech()` 构造时找不到任何已注册引擎,直接 init 失败。这在国内 Redmi 设备上是普遍情况,要求用户装 Google TTS 体验差。
+
+**最终方案**: 离线预录音频。
+- macOS `say -v Kyoko -o file.aiff "あ[[slnc 400]]"`(尾静默 400ms 避免听感截断)
+- `afconvert -f m4af -d aac` 转 .m4a
+- 46 个文件总共 ~368 KB,放 `app/src/main/res/raw/kana_<romaji>.m4a`
+- 运行时用 `MediaPlayer.create(ctx, R.raw.kana_a).start()`,播放完 `release()`
+- 换 `tts/JapaneseTts.kt` 为 `audio/KanaAudio.kt`(API 一致:`rememberKanaAudio()` + `audio.play(resId)`)
+- `Kana` data class 加 `audioRes: Int` 字段
+- 删掉 `tts_unavailable` / `tts_init_failed` 字符串
+- 提交脚本 `scripts/generate_kana_audio.sh` 用于复现/重生成
+
+**优点**: 零系统依赖,任何 Android 设备都稳定能用;Kyoko 母语女声音质比合成 TTS 自然;离线可用。
+**代价**: APK 体积 +~370 KB(完全可接受),只支持已预录的清音(扩 浊音/拗音 时需要重跑脚本)。
+
+### 13.2 vectordrawable-animated 依赖必须显式加
+
+**原计划**: §5.3 写 `import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat` 即可。
+
+**实际**: AS 的 Empty Compose Activity 模板**没**带这个依赖,首次加 `StrokeAnimator.kt` 编译失败 (`Unresolved reference 'vectordrawable'`)。要在 `app/build.gradle.kts` 显式加:
+
+```kotlin
+implementation("androidx.vectordrawable:vectordrawable-animated:1.2.0")
+```
+
+通过 `gradle/libs.versions.toml` 管理。修复 commit `c6c88da`。
+
+### 13.3 AS 模板的 Theme 函数命名带 `_temp` 后缀
+
+**实际**: AS 用项目名 `GojuonCards_temp` 生成 Theme 函数 `GojuonCards_tempTheme`。Phase 2.1 改主题时顺手把 Compose theme 函数 + MainActivity 调用都改成 `GojuonCardsTheme`(去掉 _temp)。XML 主题 `Theme.GojuonCards_temp`(在 `themes.xml` 里)和 manifest 引用未动 —— 它们是 Android 系统主题(splash/状态栏 fallback),Compose runtime 不依赖。
+
+### 13.4 LookAndFeel 锁定竖屏
+
+用户主动要求关掉自动旋转,在 `AndroidManifest.xml` MainActivity 加 `android:screenOrientation="portrait"`。Commit `89ea498`。
+
