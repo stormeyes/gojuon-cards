@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="220dp"
+            android:height="220dp"
+            android:viewportWidth="109"
+            android:viewportHeight="109">
+        <path
+            android:name="stroke1"
+            android:pathData="M38.75,25.25c1.25,1.5,2.24,4.03,1.62,6.62c-2.88,12.13-6.29,29.65-4.25,42.38c2,12.5,1.75-0.75,5.62-6.25"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:trimPathStart="0"
+            android:trimPathEnd="0"
+            android:fillColor="#00000000"/>
+        <path
+            android:name="stroke2"
+            android:pathData="M69.37,18.75c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,0,26.38,0,35.75c0,16.5-5,25.75-12.62,33.12"
+            android:strokeColor="#FF000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:trimPathStart="0"
+            android:trimPathEnd="0"
+            android:fillColor="#00000000"/>
+        </vector>
+    </aapt:attr>
+    <target android:name="stroke1">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="trimPathEnd"
+                android:duration="400"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:startOffset="0"/>
+        </aapt:attr>
+    </target>
+    <target android:name="stroke2">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="trimPathEnd"
+                android:duration="400"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:startOffset="400"/>
+        </aapt:attr>
+    </target>
+</animated-vector>
