@@ -1,0 +1,19 @@
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.gradle/
+local.properties
+captures/
+.externalNativeBuild
+.cxx
+
+# Build outputs
+build/
+app/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated
+*.hprof
