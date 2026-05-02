@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">GojuonCards_temp</string>
+    <string name="app_name">日语五十音</string>
+
+    <!-- TopAppBar -->
+    <string name="toggle_romaji">罗马字</string>
+    <string name="toggle_random">随机</string>
+
+    <!-- Card -->
+    <string name="btn_stroke">笔顺</string>
+    <string name="btn_prev">上一个</string>
+    <string name="btn_next">下一个</string>
+
+    <!-- TTS errors -->
+    <string name="tts_unavailable">系统未安装日语 TTS,请到「设置 → 文字转语音」安装日语语音包</string>
+    <string name="tts_init_failed">语音引擎初始化失败</string>
 </resources>
