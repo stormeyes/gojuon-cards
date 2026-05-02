@@ -2,6 +2,7 @@ package com.kongkongyzt.gojuon.audio
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.media.audiofx.LoudnessEnhancer
 import androidx.annotation.RawRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -17,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
  */
 class KanaAudio(private val appContext: Context) {
     private var current: MediaPlayer? = null
+    private var enhancer: LoudnessEnhancer? = null
 
     fun play(@RawRes resId: Int) {
         if (resId == 0) return  // 没有资源,静默
@@ -25,22 +27,37 @@ class KanaAudio(private val appContext: Context) {
             try { it.stop() } catch (_: Throwable) {}
             it.release()
         }
-        current = MediaPlayer.create(appContext, resId)?.apply {
-            setOnCompletionListener {
-                it.release()
-                if (current === it) current = null
+        enhancer?.release()
+        enhancer = null
+
+        val player = MediaPlayer.create(appContext, resId) ?: return
+        // Kyoko 录的假名峰值约 -11 dBFS,默认音量在 Android 媒体流上偏小;
+        // 用 LoudnessEnhancer 加 ~15 dB 提升(自带 compressor 防削波)。
+        enhancer = runCatching {
+            LoudnessEnhancer(player.audioSessionId).apply {
+                setTargetGain(1500)
+                enabled = true
             }
-            start()
+        }.getOrNull()
+        player.setOnCompletionListener {
+            enhancer?.release()
+            enhancer = null
+            it.release()
+            if (current === it) current = null
         }
+        current = player
+        player.start()
     }
 
     fun shutdown() {
         try {
+            enhancer?.release()
             current?.stop()
             current?.release()
         } catch (_: Throwable) {
             // best effort
         }
+        enhancer = null
         current = null
     }
 }
