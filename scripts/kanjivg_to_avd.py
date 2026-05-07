@@ -63,6 +63,8 @@ def build_avd_xml(paths: list[str]) -> str:
     if n == 0:
         raise ValueError("no strokes found")
 
+    # trimPathEnd 默认 1 = 完整字形(静态显示用);动画 start() 时 animator 把它从
+    # valueFrom=0 拉到 valueTo=1,实现"擦掉再画"效果。
     path_elements = "\n".join(
         f'        <path\n'
         f'            android:name="stroke{i + 1}"\n'
@@ -72,7 +74,7 @@ def build_avd_xml(paths: list[str]) -> str:
         f'            android:strokeLineCap="round"\n'
         f'            android:strokeLineJoin="round"\n'
         f'            android:trimPathStart="0"\n'
-        f'            android:trimPathEnd="0"\n'
+        f'            android:trimPathEnd="1"\n'
         f'            android:fillColor="#00000000"/>'
         for i, d in enumerate(paths)
     )

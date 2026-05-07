@@ -16,7 +16,7 @@
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
             android:trimPathStart="0"
-            android:trimPathEnd="0"
+            android:trimPathEnd="1"
             android:fillColor="#00000000"/>
         <path
             android:name="stroke2"
@@ -26,7 +26,7 @@
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
             android:trimPathStart="0"
-            android:trimPathEnd="0"
+            android:trimPathEnd="1"
             android:fillColor="#00000000"/>
         <path
             android:name="stroke3"
@@ -36,7 +36,7 @@
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
             android:trimPathStart="0"
-            android:trimPathEnd="0"
+            android:trimPathEnd="1"
             android:fillColor="#00000000"/>
         </vector>
     </aapt:attr>

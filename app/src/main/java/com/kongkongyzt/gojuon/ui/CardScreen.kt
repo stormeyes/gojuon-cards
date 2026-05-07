@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kongkongyzt.gojuon.R
@@ -214,25 +213,19 @@ private fun CardContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 大假名 / 笔顺动画区域(同一位置,固定 size 防止动画切换抖动布局)
+            // 大假名(KanjiVG 笔形)— 始终是 StrokeAnimator,默认显示完整字形,
+            // playToken 增量触发"擦掉再画"动画。整个区域可点 → 发音。
             Box(
-                modifier = Modifier.size(260.dp),
+                modifier = Modifier
+                    .size(260.dp)
+                    .clickable { onTapKana() },
                 contentAlignment = Alignment.Center
             ) {
-                if (strokePlayToken > 0) {
-                    StrokeAnimator(
-                        drawableRes = kana.drawableRes,
-                        playToken = strokePlayToken,
-                        modifier = Modifier.size(220.dp)
-                    )
-                } else {
-                    Text(
-                        text = kana.char,
-                        fontSize = 220.sp,
-                        fontWeight = FontWeight.Normal,
-                        modifier = Modifier.clickable { onTapKana() }
-                    )
-                }
+                StrokeAnimator(
+                    drawableRes = kana.drawableRes,
+                    playToken = strokePlayToken,
+                    modifier = Modifier.size(220.dp)
+                )
             }
             Spacer(Modifier.height(8.dp))
             if (showRomaji) {
