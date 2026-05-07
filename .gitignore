@@ -20,3 +20,6 @@ Thumbs.db
 
 # KanjiVG raw data (regeneratable, ~200 KB)
 scripts/kanjivg_raw/
+
+# Release signing keystore (private; do not publish)
+keystore/
