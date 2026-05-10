@@ -9,6 +9,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 
+private const val KANA_LOUDNESS_GAIN_MB = 2_000
+
 /**
  * 假名发音播放器(基于 MediaPlayer + raw 资源)。
  * 用法:`val audio = rememberKanaAudio(); audio.play(R.raw.kana_a)`
@@ -31,11 +33,12 @@ class KanaAudio(private val appContext: Context) {
         enhancer = null
 
         val player = MediaPlayer.create(appContext, resId) ?: return
+        player.setVolume(1.0f, 1.0f)
         // Kyoko 录的假名峰值约 -11 dBFS,默认音量在 Android 媒体流上偏小;
-        // 用 LoudnessEnhancer 加 ~15 dB 提升(自带 compressor 防削波)。
+        // 用 LoudnessEnhancer 加 ~20 dB 提升(自带 compressor 防削波)。
         enhancer = runCatching {
             LoudnessEnhancer(player.audioSessionId).apply {
-                setTargetGain(1500)
+                setTargetGain(KANA_LOUDNESS_GAIN_MB)
                 enabled = true
             }
         }.getOrNull()
