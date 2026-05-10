@@ -39,7 +39,7 @@ adb install gojuon-cards-v0.1.apk
 
 - **Kotlin** 2.2 + **Jetpack Compose** Material 3
 - **AGP** 9.x,Gradle Kotlin DSL
-- **Audio**: 46 个 .m4a 文件(macOS `say -v Kyoko` 生成),`MediaPlayer` 播放,运行时 `LoudnessEnhancer` +15dB 增益
+- **Audio**: 46 个 .m4a 文件(macOS `say -v Kyoko` 生成),`MediaPlayer` 播放,运行时 `LoudnessEnhancer` +20dB 增益
 - **Stroke animations**: 46 个 `AnimatedVectorDrawable` (从 KanjiVG SVG 转换),`trimPathEnd` 0→1 逐笔动画
 - **State**: `rememberSaveable` 持久化(页码、罗马字 / 随机开关跨配置变化保留)
 - 真机验证驱动开发(无自动化测试,详见 [设计文档](docs/superpowers/specs/2026-05-02-gojuon-app-design.md) §10)
